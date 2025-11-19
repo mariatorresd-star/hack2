@@ -1,80 +1,127 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Task, Project, TeamMember } from '../../types';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
-import { TaskPriority, TaskStatus } from '../../types';
 
 interface TaskFormProps {
-  onSubmit: (data: {
-    title: string;
-    description: string;
-    projectId: string;
-    priority: TaskPriority;
-    status: TaskStatus;
-    dueDate?: string;
-    assignedTo?: string;
-  }) => Promise<void>;
-  projectId?: string;
-  initialData?: any;
+  task: Task | null;
+  projects: Project[];
+  teamMembers: TeamMember[];
+  onSubmit: (task: Partial<Task>) => void;
+  onCancel: () => void;
 }
 
-export const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, projectId, initialData }) => {
-  const [title, setTitle] = useState(initialData?.title || '');
-  const [description, setDescription] = useState(initialData?.description || '');
-  const [priority, setPriority] = useState<TaskPriority>(initialData?.priority || 'MEDIUM');
-  const [status, setStatus] = useState<TaskStatus>(initialData?.status || 'TODO');
-  const [dueDate, setDueDate] = useState(initialData?.dueDate || '');
-  const [selectedProjectId, setSelectedProjectId] = useState(projectId || initialData?.projectId || '');
-  const [isLoading, setIsLoading] = useState(false);
+export const TaskForm: React.FC<TaskFormProps> = ({
+  task,
+  projects,
+  teamMembers,
+  onSubmit,
+  onCancel
+}) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    projectId: '',
+    status: 'TODO' as Task['status'],
+    priority: 'MEDIUM' as Task['priority'],
+    dueDate: '',
+    assignedTo: ''
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      await onSubmit({
-        title,
-        description,
-        projectId: selectedProjectId,
-        priority,
-        status,
-        dueDate: dueDate || undefined
+  useEffect(() => {
+    if (task) {
+      setFormData({
+        title: task.title,
+        description: task.description,
+        projectId: task.projectId,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
+        assignedTo: task.assignedTo || ''
       });
-    } finally {
-      setIsLoading(false);
     }
+  }, [task]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const submitData: Partial<Task> = {
+      ...formData,
+      dueDate: formData.dueDate || undefined,
+      assignedTo: formData.assignedTo || undefined
+    };
+
+    onSubmit(submitData);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
-        label="Título"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        label="Título de la Tarea"
+        type="text"
+        value={formData.title}
+        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+        placeholder="Ej: Implementar autenticación"
         required
       />
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">Descripción</label>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Descripción
+        </label>
         <textarea
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           rows={3}
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="Describe la tarea..."
           required
         />
       </div>
-      <Input
-        label="ID del Proyecto"
-        value={selectedProjectId}
-        onChange={(e) => setSelectedProjectId(e.target.value)}
-        required
-        disabled={!!projectId}
-      />
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Proyecto *
+        </label>
+        <select
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={formData.projectId}
+          onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+          required
+        >
+          <option value="">Selecciona un proyecto</option>
+          {projects.map(project => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">Prioridad</label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Estado
+          </label>
           <select
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={priority}
-            onChange={(e) => setPriority(e.target.value as TaskPriority)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={formData.status}
+            onChange={(e) => setFormData({ ...formData, status: e.target.value as Task['status'] })}
+          >
+            <option value="TODO">Por hacer</option>
+            <option value="IN_PROGRESS">En progreso</option>
+            <option value="COMPLETED">Completado</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Prioridad
+          </label>
+          <select
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={formData.priority}
+            onChange={(e) => setFormData({ ...formData, priority: e.target.value as Task['priority'] })}
           >
             <option value="LOW">Baja</option>
             <option value="MEDIUM">Media</option>
@@ -82,28 +129,41 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, projectId, initial
             <option value="URGENT">Urgente</option>
           </select>
         </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">Estado</label>
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={status}
-            onChange={(e) => setStatus(e.target.value as TaskStatus)}
-          >
-            <option value="TODO">Por Hacer</option>
-            <option value="IN_PROGRESS">En Progreso</option>
-            <option value="COMPLETED">Completado</option>
-          </select>
-        </div>
       </div>
+
       <Input
-        label="Fecha Límite"
+        label="Fecha de Vencimiento"
         type="date"
-        value={dueDate}
-        onChange={(e) => setDueDate(e.target.value)}
+        value={formData.dueDate}
+        onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
       />
-      <Button type="submit" isLoading={isLoading} className="w-full">
-        {initialData ? 'Actualizar' : 'Crear'} Tarea
-      </Button>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Asignar a
+        </label>
+        <select
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={formData.assignedTo}
+          onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+        >
+          <option value="">Sin asignar</option>
+          {teamMembers.map(member => (
+            <option key={member.id} value={member.id}>
+              {member.name} ({member.email})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex space-x-3 pt-4">
+        <Button type="submit" className="flex-1">
+          {task ? 'Actualizar' : 'Crear'} Tarea
+        </Button>
+        <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">
+          Cancelar
+        </Button>
+      </div>
     </form>
   );
 };

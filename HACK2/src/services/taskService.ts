@@ -1,16 +1,23 @@
 import { api } from './api';
-import { Task, TaskStatus, TaskPriority } from '../types';
+import { Task, PaginatedResponse } from '../types';
+
+interface TaskFilters {
+  projectId?: string;
+  status?: string;
+  priority?: string;
+  page?: number;
+  limit?: number;
+}
 
 export const taskService = {
-  async getTasks(filters?: {
-    projectId?: string;
-    status?: TaskStatus;
-    priority?: TaskPriority;
-    page?: number;
-    limit?: number;
-  }) {
+  async getTasks(filters: TaskFilters = {}): Promise<PaginatedResponse<Task>> {
     const response = await api.get('/tasks', { params: filters });
-    return response.data;
+    return {
+      data: response.data.tasks,
+      totalPages: response.data.totalPages,
+      currentPage: response.data.currentPage || 1,
+      total: response.data.total || response.data.tasks.length
+    };
   },
 
   async getTaskById(id: string): Promise<Task> {
@@ -18,30 +25,22 @@ export const taskService = {
     return response.data;
   },
 
-  async createTask(data: {
-    title: string;
-    description: string;
-    projectId: string;
-    priority: TaskPriority;
-    dueDate?: string;
-    assignedTo?: string;
-  }): Promise<Task> {
-    const response = await api.post('/tasks', data);
+  async createTask(task: Partial<Task>): Promise<Task> {
+    const response = await api.post('/tasks', task);
     return response.data;
   },
 
-  async updateTask(id: string, data: Partial<Task>): Promise<Task> {
-    const response = await api.put(`/tasks/${id}`, data);
+  async updateTask(id: string, task: Partial<Task>): Promise<Task> {
+    const response = await api.put(`/tasks/${id}`, task);
     return response.data;
   },
 
-  async updateTaskStatus(id: string, status: TaskStatus): Promise<Task> {
+  async updateTaskStatus(id: string, status: Task['status']): Promise<Task> {
     const response = await api.patch(`/tasks/${id}/status`, { status });
     return response.data;
   },
 
-  async deleteTask(id: string) {
-    const response = await api.delete(`/tasks/${id}`);
-    return response.data;
+  async deleteTask(id: string): Promise<void> {
+    await api.delete(`/tasks/${id}`);
   }
 };

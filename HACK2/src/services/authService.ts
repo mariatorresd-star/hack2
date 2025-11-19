@@ -1,14 +1,19 @@
 import { api } from './api';
-import { User, LoginResponse } from '../types';
+import { AuthResponse, LoginCredentials, RegisterCredentials, User } from '../types';
 
 export const authService = {
-  async register(data: { name: string; email: string; password: string }) {
-    const response = await api.post('/auth/register', data);
+  async register(credentials: RegisterCredentials): Promise<{ message: string }> {
+    const response = await api.post('/auth/register', credentials);
     return response.data;
   },
 
-  async login(data: { email: string; password: string }): Promise<LoginResponse> {
-    const response = await api.post<LoginResponse>('/auth/login', data);
+  async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    const response = await api.post<AuthResponse>('/auth/login', credentials);
+    const { token, user } = response.data;
+    
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    
     return response.data;
   },
 
@@ -17,7 +22,21 @@ export const authService = {
     return response.data;
   },
 
-  logout() {
+  logout(): void {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  },
+
+  getCurrentUser(): User | null {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  },
+
+  getToken(): string | null {
+    return localStorage.getItem('token');
+  },
+
+  isAuthenticated(): boolean {
+    return !!this.getToken();
   }
 };

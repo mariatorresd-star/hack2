@@ -1,62 +1,88 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Project } from '../../types';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
-import { ProjectStatus } from '../../types';
 
 interface ProjectFormProps {
-  onSubmit: (data: { name: string; description: string; status: ProjectStatus }) => Promise<void>;
-  initialData?: { name: string; description: string; status: ProjectStatus };
+  project: Project | null;
+  onSubmit: (project: Partial<Project>) => void;
+  onCancel: () => void;
 }
 
-export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, initialData }) => {
-  const [name, setName] = useState(initialData?.name || '');
-  const [description, setDescription] = useState(initialData?.description || '');
-  const [status, setStatus] = useState<ProjectStatus>(initialData?.status || 'ACTIVE');
-  const [isLoading, setIsLoading] = useState(false);
+export const ProjectForm: React.FC<ProjectFormProps> = ({
+  project,
+  onSubmit,
+  onCancel
+}) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    status: 'ACTIVE' as Project['status']
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      await onSubmit({ name, description, status });
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    if (project) {
+      setFormData({
+        name: project.name,
+        description: project.description,
+        status: project.status
+      });
     }
+  }, [project]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
         label="Nombre del Proyecto"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
+        type="text"
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        placeholder="Ej: Rediseño de la aplicación"
         required
       />
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">Descripción</label>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Descripción
+        </label>
         <textarea
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={3}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          rows={4}
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="Describe el proyecto..."
           required
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">Estado</label>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Estado
+        </label>
         <select
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={status}
-          onChange={(e) => setStatus(e.target.value as ProjectStatus)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={formData.status}
+          onChange={(e) => setFormData({ ...formData, status: e.target.value as Project['status'] })}
         >
           <option value="ACTIVE">Activo</option>
+          <option value="ON_HOLD">En espera</option>
           <option value="COMPLETED">Completado</option>
-          <option value="ON_HOLD">En Espera</option>
         </select>
       </div>
-      <Button type="submit" isLoading={isLoading} className="w-full">
-        {initialData ? 'Actualizar' : 'Crear'} Proyecto
-      </Button>
+
+      <div className="flex space-x-3 pt-4">
+        <Button type="submit" className="flex-1">
+          {project ? 'Actualizar' : 'Crear'} Proyecto
+        </Button>
+        <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">
+          Cancelar
+        </Button>
+      </div>
     </form>
   );
 };

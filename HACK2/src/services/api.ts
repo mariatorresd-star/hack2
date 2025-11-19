@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://cs2031-2025-2-hackathon-2-backend-production.up.railway.app/v1';
+const API_URL = 'https://cs2031-2025-2-hackathon-2-backend-production.up.railway.app/v1';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -27,6 +27,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       window.location.href = '/login';
     }
     return Promise.reject(error);

@@ -5,32 +5,38 @@ export interface User {
   createdAt: string;
 }
 
-export interface LoginResponse {
+export interface AuthResponse {
   token: string;
   user: User;
 }
 
-export type ProjectStatus = 'ACTIVE' | 'COMPLETED' | 'ON_HOLD';
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterCredentials {
+  email: string;
+  password: string;
+  name: string;
+}
 
 export interface Project {
   id: string;
   name: string;
   description: string;
-  status: ProjectStatus;
+  status: 'ACTIVE' | 'COMPLETED' | 'ON_HOLD';
   createdAt: string;
   updatedAt: string;
   tasks?: Task[];
 }
 
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'COMPLETED';
-export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-
 export interface Task {
   id: string;
   title: string;
   description: string;
-  status: TaskStatus;
-  priority: TaskPriority;
+  status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   projectId: string;
   assignedTo?: string;
   dueDate?: string;
@@ -42,4 +48,11 @@ export interface TeamMember {
   id: string;
   name: string;
   email: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  totalPages: number;
+  currentPage: number;
+  total: number;
 }
